@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import json
+import pandas as pd
 
 import torch
 import torch.nn as nn
@@ -9,7 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 from nltk_utils import bag_of_words, tokenize, stem
 from model import NeuralNet
 
-with open('intents.json', 'r') as f:
+with open('./intents/intents.json', 'r') as f:
     intents = json.load(f)
 
 all_words = []
@@ -21,6 +22,13 @@ for intent in intents['intents']:
     # add to tag list
     tags.append(tag)
     for pattern in intent['patterns']:
+        # tokenize each word in the sentence
+        w = tokenize(pattern)
+        # add to our words list
+        all_words.extend(w)
+        # add to xy pair
+        xy.append((w, tag))
+    for pattern in pd.read_csv(f'./intents/{tag}.csv')['0'].values:
         # tokenize each word in the sentence
         w = tokenize(pattern)
         # add to our words list
@@ -54,7 +62,7 @@ X_train = np.array(X_train)
 y_train = np.array(y_train)
 
 # Hyper-parameters
-num_epochs = 1000
+num_epochs = 100
 batch_size = 8
 learning_rate = 0.001
 input_size = len(X_train[0])
@@ -110,7 +118,7 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
-    if (epoch+1) % 100 == 0:
+    if (epoch+1) % 5 == 0:
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
 

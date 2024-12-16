@@ -1,5 +1,6 @@
 import random
 import json
+import requests
 
 import torch
 
@@ -8,7 +9,7 @@ from nltk_utils import bag_of_words, tokenize
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-with open('intents.json', 'r') as json_data:
+with open('./intents/intents.json', 'r') as json_data:
     intents = json.load(json_data)
 
 FILE = "data.pth"
@@ -24,6 +25,15 @@ model_state = data["model_state"]
 model = NeuralNet(input_size, hidden_size, output_size).to(device)
 model.load_state_dict(model_state)
 model.eval()
+
+def exchange():
+    rate = requests.get(url='https://api.nbrb.by/exrates/rates/431').json()['Cur_OfficialRate']
+    print('Exchange rate for 1 USD is :', rate)
+
+actions = {}
+actions['exchange'] = lambda x: exchange()
+
+
 
 bot_name = "Sam"
 print("Let's chat! (type 'quit' to exit)")
@@ -48,6 +58,10 @@ while True:
     if prob.item() > 0.75:
         for intent in intents['intents']:
             if tag == intent["tag"]:
-                print(f"{bot_name}: {random.choice(intent['responses'])}")
+                choice = random.choice(intent['responses'])
+                if choice == '<action>':
+                    actions[tag](None)
+                else:
+                    print(f"{bot_name}: {choice}")
     else:
         print(f"{bot_name}: I do not understand...")
